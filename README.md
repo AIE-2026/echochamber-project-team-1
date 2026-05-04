@@ -40,6 +40,23 @@ cp .env.example .env        # then add your API key
 ```
 
 ## Team
+## Student 2 – Osaci Cosmin (Course 1)
+
+### Task: LLM Summary
+
+Implemented a basic interaction with a Large Language Model (Gemini) using Python.
+
+### What was done:
+- configured API key using `.env`
+- generated a neutral summary of a public-interest text
+- tested the `temperature` parameter
+- saved the result as JSON
+
+### Notebook:
+notebooks/student_2_osaci_cosmin/student_02_C1.ipynb
+
+### Output:
+notebooks/student_2_osaci_cosmin/outputs/c1_student_summary.json
 
 - **Team name:**
 - **Topic / bubble theme:**
