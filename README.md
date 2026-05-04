@@ -58,6 +58,7 @@ notebooks/student_2_osaci_cosmin/student_02_C1.ipynb
 ### Output:
 notebooks/student_2_osaci_cosmin/outputs/c1_student_summary.json
 
+
 - **Team name:**
 - **Topic / bubble theme:**
 - **Members and agents:**
@@ -66,3 +67,12 @@ notebooks/student_2_osaci_cosmin/outputs/c1_student_summary.json
   - Member 3 → Agent:
   - Member 4 → Agent:
   - Member 5 → Agent:
+
+## C2 — Model Selection (Student 02)
+
+**Recommended model:** Gemini 2.5 Flash Lite  
+**Fallback model:** Gemini 2.5 Flash  
+**Recommended temperature:** 0.7  
+
+**Reason:**  
+Gemini 2.5 Flash Lite produces concise and consistent responses, follows instructions accurately, and performs well for structured annotation tasks. Compared to OpenRouter Free, it generates higher-quality outputs with fewer errors. It is stable across different temperatures and suitable for political text annotation.
