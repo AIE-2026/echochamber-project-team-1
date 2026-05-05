@@ -1,15 +1,15 @@
 # core/config.py
 # ===============
-\# Final model configuration selected by the team after C2.
+# Final model configuration selected by the team after C2.
 
-\# Do not put API keys here. API keys stay only in the local .env file.
+# Do not put API keys here. API keys stay only in the local .env file.
 
-PROVIDER\_PRINCIPAL = "gemini"
+PROVIDER_PRINCIPAL = "gemini"
 
-MODEL\_PRINCIPAL = "gemini-2.5-flash-lite"
+MODEL_PRINCIPAL = "gemini-2.5-flash-lite"
 
-PROVIDER\_FALLBACK = "openrouter"
+PROVIDER_FALLBACK = "openrouter"
 
-MODEL\_FALLBACK = "openrouter/free"
+MODEL_FALLBACK = "openrouter/free"
 
 TEMPERATURE = 0.7
