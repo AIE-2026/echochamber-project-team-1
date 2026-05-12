@@ -14,7 +14,7 @@ from datetime import datetime
 from dotenv import load_dotenv
 # 2. Setări API
 ROOT = Path(__file__).resolve().parents[1]
-load_dotenv(ROOT / ".env")
+load_dotenv(ROOT / ".env.")
 API_KEY = os.getenv("YOUTUBE_API_KEY")
 BASE_URL = "https://www.googleapis.com/youtube/v3"
 if API_KEY is None:
