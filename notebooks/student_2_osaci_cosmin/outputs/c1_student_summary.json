@@ -1,0 +1,9 @@
+{
+  "timestamp": "2026-05-04T09:19:12.140578",
+  "model": "gemini-2.5-flash-lite",
+  "temperature": 0.2,
+  "max_tokens": 120,
+  "task": "student_neutral_summary",
+  "input_text": "\nAutoritățile locale din mai multe orașe europene au anunțat extinderea rețelelor de transport public electric.\nProiectele includ achiziția de autobuze electrice și modernizarea infrastructurii existente.\nReprezentanții administrației susțin că măsurile vor contribui la reducerea poluării și a costurilor de întreținere pe termen lung.\nTotodată, se urmărește creșterea frecvenței curselor și îmbunătățirea accesibilității pentru pasageri.\nUnele organizații de mediu au salutat inițiativa, dar au atras atenția asupra costurilor inițiale ridicate.\nImplementarea proiectelor este planificată pe parcursul următorilor ani.\n",
+  "output_text": "Autoritățile din orașe europene extind transportul public electric prin achiziționarea de autobuze noi și modernizarea infrastructurii. Scopul este reducerea poluării și a costurilor, precum și creșterea frecvenței și accesibilității. Organizațiile de mediu susțin inițiativa, dar menționează costurile inițiale. Proiectele se vor desfășura în următorii ani."
+}
