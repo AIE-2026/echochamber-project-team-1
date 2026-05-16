@@ -12,16 +12,17 @@ from core.retriever import Retriever
  # exemplu  python -m core.agent --agent anti_sistem --text "CCR a decis anularea alegerilor după suspiciuni privind influențe externe." --provider gemini --k 5
 load_dotenv()
 
+# Configurarea modelelor Gemini (Lite și Standard) via endpoint-ul OpenAI
 MODELS = {
     "gemini": {
         "model": os.getenv("GEMINI_MODEL", "gemini-2.5-flash-lite"),
         "api_key": os.getenv("GEMINI_API_KEY"),
         "base_url": "https://generativelanguage.googleapis.com/v1beta/openai/",
     },
-    "deepseek": {
-        "model": os.getenv("DEEPSEEK_MODEL", "deepseek-chat"),
-        "api_key": os.getenv("DEEPSEEK_API_KEY"),
-        "base_url": "https://api.deepseek.com/v1",
+    "gemini-flash": {
+        "model": os.getenv("GEMINI_FLASH_MODEL", "gemini-2.5-flash"),
+        "api_key": os.getenv("GEMINI_API_KEY"),
+        "base_url": "https://generativelanguage.googleapis.com/v1beta/openai/",
     },
 }
 
@@ -40,7 +41,7 @@ def load_role(agent_slug, roles_path="assets/roles/roles.yaml"):
     return roles[agent_slug]
 
 
-def make_llm(provider="gemini", temperature=0.3):
+def make_llm(provider="gemini", temperature=0.7):
     config = MODELS[provider]
 
     if not config["api_key"]:
@@ -69,12 +70,14 @@ def generate_agent_response(
     stimulus,
     provider="gemini",
     k=5,
-    temperature=0.3,
+    temperature=0.7, # Valoare implicită actualizată la 0.7
     roles_path="assets/roles/roles.yaml",
 ):
+    """Rulează întregul flux: încarcă rolul, extrage contextul RAG și apelează LLM-ul."""
     role = load_role(agent_slug, roles_path)
     retriever = Retriever(agent_slug)
 
+ # Căutare contextuală (RAG)
     chunks = retriever.search(stimulus, k=k)
     rag_text = retriever.format_for_prompt(chunks)
 
@@ -109,9 +112,9 @@ def main():
 
     parser.add_argument("--agent", required=True)
     parser.add_argument("--text", required=True)
-    parser.add_argument("--provider", default="gemini", choices=["gemini", "deepseek"])
+    parser.add_argument("--provider", default="gemini", choices=["gemini", "gemini-flash"])
     parser.add_argument("--k", type=int, default=5)
-    parser.add_argument("--temperature", type=float, default=0.3)
+    parser.add_argument("--temperature", type=float, default=0.7)
     parser.add_argument("--roles", default="assets/roles/roles.yaml")
 
     args = parser.parse_args()
@@ -124,7 +127,7 @@ def main():
         temperature=args.temperature,
         roles_path=args.roles,
     )
-
+ # Afișare output
     print("\n=== AGENT ===")
     print(result["agent_name"])
 
