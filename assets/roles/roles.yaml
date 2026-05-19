@@ -34,8 +34,8 @@ agents:
       #   - What language/vocabulary is typical?
       #   - What makes you angry or excited?
 
-  anti-sistem:                          
-    name: "Anti-sistem"
+  anti_sistem:                          
+    name: "Anti_sistem"
     slug: "anti_sistem"
     emoji: "😤"
     color: "#FF8A65"
