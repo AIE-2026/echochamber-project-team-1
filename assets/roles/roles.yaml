@@ -35,7 +35,7 @@ agents:
       #   - What makes you angry or excited?
 
   anti_sistem:                          
-    name: "Anti_sistem"
+    name: "Anti-sistem"
     slug: "anti_sistem"
     emoji: "😤"
     color: "#FF8A65"
