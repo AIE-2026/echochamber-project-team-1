@@ -23,6 +23,7 @@ Structure:
 # 1. IMPORTS & SETUP
 import sys
 from pathlib import Path
+import html
 
 import gradio as gr
 import yaml
@@ -32,6 +33,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.append(str(PROJECT_ROOT))
 
 from core.agent import generate_agent_response
+from core.graph import run_thread
 
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -76,7 +78,96 @@ def rag_agent_response(agent_slug, stimulus, provider, k):
 
     except Exception as e:
         return f"[Eroare: {type(e).__name__} — {e}]", ""
-    
+# Randare HTML pentru thread-ul multi-agent
+# Randare HTML pentru thread-ul multi-agent
+def render_thread_html(messages):
+    cards = []
+
+    for i, msg in enumerate(messages, start=1):
+        agent = ""
+        handle = ""
+        text = ""
+        turn = i
+
+        if isinstance(msg, dict):
+            turn = msg.get("turn", i)
+
+            # Uneori core.graph pune rezultatul complet al agentului în msg["text"]
+            raw_text = msg.get("text", "")
+
+            if isinstance(raw_text, dict):
+                agent = raw_text.get("agent_name", raw_text.get("agent_slug", "Agent"))
+                handle = raw_text.get("agent_slug", msg.get("handle", msg.get("slug", "")))
+                text = raw_text.get("response", "")
+            else:
+                agent = msg.get("agent", msg.get("agent_name", "Agent"))
+                handle = msg.get("handle", msg.get("slug", msg.get("agent_slug", "")))
+                text = raw_text or msg.get("response", "")
+        else:
+            agent = "Agent"
+            handle = ""
+            text = str(msg)
+
+        agent = html.escape(str(agent))
+        handle = html.escape(str(handle))
+        text = html.escape(str(text))
+        turn = html.escape(str(turn))
+
+        cards.append(f"""
+        <div style="border-left: 3px solid #e05a35; padding: .7rem 1rem; margin: .5rem 0; background: #f7f7f7; border-radius: 6px;">
+            <div style="font-size: .8rem; color: #e05a35; font-weight: bold; text-transform: uppercase;">
+                {agent}
+            </div>
+            <div style="font-size: .75rem; color: #666;">
+                {handle} · #{turn}
+            </div>
+            <p style="color: #222; margin-top: .5rem;">
+                {text}
+            </p>
+        </div>
+        """)
+
+    return "\n".join(cards)
+# Funcție pentru rularea thread-ului multi-agent
+def run_multi_agent_thread(
+    stimulus,
+    provider,
+    total_turns,
+    use_anti_sistem,
+    use_conspirationist,
+    use_anti_suveranist
+):
+    active_slugs = []
+
+    if use_anti_sistem:
+        active_slugs.append("anti_sistem")
+
+    if use_conspirationist:
+        active_slugs.append("conspirationist")
+
+    if use_anti_suveranist:
+        active_slugs.append("anti_suveranist")
+
+    if not stimulus.strip():
+        return "Scrie un text politic mai întâi."
+
+    if not active_slugs:
+        return "Selectează cel puțin un agent."
+
+    try:
+        messages = run_thread(
+            stimulus=stimulus,
+            active_slugs=active_slugs,
+            total_turns=int(total_turns),
+            provider=provider,
+            k=3,
+        )
+
+        return render_thread_html(messages)
+
+    except Exception as e:
+        return f"[Eroare Multi-agent Thread: {type(e).__name__} — {e}]"    
+#UI complet minim
 #UI complet minim
 agent_choices = load_agent_choices()
 
@@ -160,5 +251,60 @@ with gr.Blocks(title="EchoChamber") as demo:
             ]
         )
 
+    with gr.Tab("Multi-agent thread"):
+
+        thread_stimulus = gr.Textbox(
+            label="Text politic",
+            value="CCR a decis anularea alegerilor după suspiciuni privind influențe externe.",
+            lines=4
+        )
+
+        thread_provider = gr.Dropdown(
+            choices=["gemini", "gemini-flash"],
+            value="gemini-flash",
+            label="Provider"
+        )
+
+        thread_turns = gr.Slider(
+            minimum=2,
+            maximum=8,
+            value=4,
+            step=1,
+            label="Număr intervenții"
+        )
+
+        use_anti_sistem = gr.Checkbox(
+            value=True,
+            label="Anti-sistem"
+        )
+
+        use_conspirationist = gr.Checkbox(
+            value=True,
+            label="Conspiraționist"
+        )
+
+        use_anti_suveranist = gr.Checkbox(
+            value=True,
+            label="Anti-suveranist"
+        )
+
+        thread_button = gr.Button("Pornește thread")
+
+        thread_output = gr.HTML(
+            label="Thread generat"
+        )
+
+        thread_button.click(
+            fn=run_multi_agent_thread,
+            inputs=[
+                thread_stimulus,
+                thread_provider,
+                thread_turns,
+                use_anti_sistem,
+                use_conspirationist,
+                use_anti_suveranist
+            ],
+            outputs=thread_output
+        )
 if __name__ == "__main__":
     demo.launch()
