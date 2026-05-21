@@ -138,7 +138,6 @@ agents:
       # TODO
 
   personalist_salvator:
-    slug: personalist_salvator
     name: "Personalist_salvator"
     emoji: "🛡️"
     color: "#64B5F6"
