@@ -76,3 +76,9 @@ notebooks/student_2_osaci_cosmin/outputs/c1_student_summary.json
 
 **Reason:**  
 Gemini 2.5 Flash Lite produces concise and consistent responses, follows instructions accurately, and performs well for structured annotation tasks. Compared to OpenRouter Free, it generates higher-quality outputs with fewer errors. It is stable across different temperatures and suitable for political text annotation.
+
+## Ethics and limitations
+
+EchoChamber is a teaching and research prototype. Its agents are simulated discursive roles, not real people or representatives of real social groups. Generated outputs may contain bias, unsupported claims, or amplified conflict and must be interpreted critically.
+
+See [`docs/ethics_checklist.md`](docs/ethics_checklist.md) for the full ethics note, limitations, and checklist.
