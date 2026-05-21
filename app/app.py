@@ -21,290 +21,390 @@ Structure:
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 1. IMPORTS & SETUP
+import os
 import sys
+import traceback
 from pathlib import Path
 import html
+from functools import wraps
+from core.graph import run_thread
 
+
+def safe_handler(fn):
+    """Catch any exception in a Gradio handler and return it as text
+    instead of letting it crash the websocket ('connection lost')."""
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        try:
+            return fn(*args, **kwargs)
+        except Exception as e:
+            tb = traceback.format_exc()
+            print(tb, file=sys.stderr)
+            return f"[Error in {fn.__name__}: {type(e).__name__}: {e}]"
+    return wrapper
+
+import requests  # FIX: was `from fastapi import requests` (fastapi has no `requests`)
+from bs4 import BeautifulSoup
 import gradio as gr
 import yaml
+from dotenv import load_dotenv
+from openai import OpenAI
+from openai import RateLimitError, APIError, AuthenticationError
 
-
+# ENV SETUP
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.append(str(PROJECT_ROOT))
+
+load_dotenv(PROJECT_ROOT / ".env")
+
+BASE_URLS = {
+    "gemini": "https://generativelanguage.googleapis.com/v1beta/openai/",
+    "gemini-flash": "https://generativelanguage.googleapis.com/v1beta/openai/",
+}
+
+API_KEYS = {
+    "gemini": os.getenv("GEMINI_API_KEY"),
+    "gemini-flash": os.getenv("GEMINI_API_KEY"),
+}
 
 from core.agent import generate_agent_response
 from core.graph import run_thread
 
+_CLIENT_CACHE = {}
+
+
+def make_client(provider):
+    # FIX: removed duplicate definition that bypassed the cache
+    if provider in _CLIENT_CACHE:
+        return _CLIENT_CACHE[provider]
+
+    client = OpenAI(
+        api_key=API_KEYS.get(provider),
+        base_url=BASE_URLS.get(provider),
+    )
+    _CLIENT_CACHE[provider] = client
+    return client
+
+
+def ask(provider, model, prompt, system=None, temperature=0.7):
+    # FIX: removed the duplicate empty `ask` stub above this one
+    client = make_client(provider)
+
+    messages = []
+    if system:
+        messages.append({"role": "system", "content": system})
+    messages.append({"role": "user", "content": prompt})
+
+    try:
+        response = client.chat.completions.create(
+            model=model,
+            messages=messages,
+            temperature=temperature,
+        )
+        return response.choices[0].message.content.strip()
+    except RateLimitError:
+        return f"[RateLimit: {model}]"
+    except AuthenticationError:
+        return "[Auth Error: check API key]"
+    except APIError as e:
+        return f"[API Error: {e}]"
+    except Exception as e:
+        return f"[Error: {type(e).__name__}: {e}]"
+
+
 # ─────────────────────────────────────────────────────────────────────────────
+# 2. CONSTANTS
+DEFAULT_K = 5
+
+ALLOWED_AGENTS = {
+    "anti_sistem",
+    "conspirationist",
+    "anti_suveranist",
+}
 
 
-#Adaug funcția load_agent_choices()
 def load_agent_choices():
     roles_path = PROJECT_ROOT / "assets" / "roles" / "roles.yaml"
-
     if not roles_path.exists():
         return []
 
     with open(roles_path, "r", encoding="utf-8") as f:
-        data = yaml.safe_load(f)
+        data = yaml.safe_load(f) or {}
 
-    roles = data["agents"] if "agents" in data else data
+    roles = data["agents"] if isinstance(data, dict) and "agents" in data else data
+    if not isinstance(roles, dict):
+        return []
 
-    return list(roles.keys())
+    return [k for k in roles.keys() if k in ALLOWED_AGENTS]
 
-#Chat simplu minim
-def chat(prompt):
-    return f"Prompt primit:\n\n{prompt}"
 
-#Funcția RAG
-def rag_agent_response(agent_slug, stimulus, provider, k):
-    if not agent_slug:
-        return "Nu există agenți în roles.yaml.", ""
-
-    if not stimulus.strip():
-        return "Scrie un text politic.", ""
-
+# ─────────────────────────────────────────────────────────────────────────────
+# 3. NEWS LOADING
+def extract_article(url: str):
     try:
+        r = requests.get(url, timeout=10, headers={"User-Agent": "Mozilla/5.0"})
+        soup = BeautifulSoup(r.text, "html.parser")
+
+        title = soup.title.text.strip() if soup.title else "Fără titlu"
+        paragraphs = soup.find_all("p")
+        text = "\n".join(p.get_text().strip() for p in paragraphs if p.get_text())
+
+        if len(text.strip()) < 200:
+            return None, None
+        return title, text
+    except Exception:
+        return None, None
+
+
+@safe_handler
+def load_news(url, manual_text):
+    if url:
+        title, text = extract_article(url)
+        if title and text:
+            preview = f"{title}\n\n{text[:800]}..."
+            return preview, text
+
+    if manual_text and manual_text.strip():
+        preview = manual_text[:800] + ("..." if len(manual_text) > 800 else "")
+        return preview, manual_text
+
+    return "Nu s-a putut încărca articolul. Introdu text manual.", ""
+
+
+@safe_handler
+def summarize_article(article):
+    if not article:
+        return "Nu există articol încărcat."
+    sentences = [s.strip() for s in article.split(".") if s.strip()]
+    return ". ".join(sentences[:5]) + "."
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 4. CHAT
+@safe_handler
+def chat(prompt, article):
+    if not article:
+        return "Nu există articol încărcat."
+    return f"{article}\n\nÎntrebare: {prompt}"
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 5. AGENT SINGLE
+@safe_handler
+def run_agent(agent_slug, source_text, article, manual_text, provider_val, temp_val):
+    if not agent_slug:
+        return "Selectează un agent."
+
+    text = article if source_text == "article" else manual_text
+    if not text or not text.strip():
+        return "Nu există text de analizat."
+
+    result = generate_agent_response(
+        agent_slug=agent_slug,
+        stimulus=text,
+        provider=provider_val,
+        k=DEFAULT_K,
+        temperature=float(temp_val),
+        roles_path="assets/roles/roles.yaml",
+    )
+    return result.get("response", "")
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 6. ALL AGENTS
+@safe_handler
+def run_all_agents(source_text, article, manual_text, provider_val, temp_val):
+    text = article if source_text == "article" else manual_text
+    if not text or not text.strip():
+        return "Nu există text."
+
+    outputs = []
+    for slug in load_agent_choices():
         result = generate_agent_response(
-            agent_slug=agent_slug,
-            stimulus=stimulus,
-            provider=provider,
-            k=int(k),
-            temperature=0.3,
+            agent_slug=slug,
+            stimulus=text,
+            provider=provider_val,
+            k=DEFAULT_K,
+            temperature=float(temp_val),
             roles_path="assets/roles/roles.yaml",
         )
+        outputs.append(f"### 🤖 {slug}\n{result.get('response','')}")
 
-        return result["response"], result["rag_text"]
+    return "\n\n---\n\n".join(outputs)
 
-    except Exception as e:
-        return f"[Eroare: {type(e).__name__} — {e}]", ""
-# Randare HTML pentru thread-ul multi-agent
-# Randare HTML pentru thread-ul multi-agent
-def render_thread_html(messages):
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 7. DEBATE
+# 7. DEBATE
+@safe_handler
+def run_debate(source_text, article, manual_text, agents, turns, provider_val, temp_val):
+    text = article if source_text == "article" else manual_text
+    if not text or not text.strip():
+        return "Nu există text."
+    if not agents:
+        return "Selectează agenți."
+
+    messages = run_thread(
+        stimulus=text,
+        active_slugs=agents,
+        total_turns=int(turns),
+        provider=provider_val,
+        k=DEFAULT_K,
+    )
+
     cards = []
-
-    for i, msg in enumerate(messages, start=1):
-        agent = ""
-        handle = ""
-        text = ""
-        turn = i
-
-        if isinstance(msg, dict):
-            turn = msg.get("turn", i)
-
-            # Uneori core.graph pune rezultatul complet al agentului în msg["text"]
-            raw_text = msg.get("text", "")
-
-            if isinstance(raw_text, dict):
-                agent = raw_text.get("agent_name", raw_text.get("agent_slug", "Agent"))
-                handle = raw_text.get("agent_slug", msg.get("handle", msg.get("slug", "")))
-                text = raw_text.get("response", "")
-            else:
-                agent = msg.get("agent", msg.get("agent_name", "Agent"))
-                handle = msg.get("handle", msg.get("slug", msg.get("agent_slug", "")))
-                text = raw_text or msg.get("response", "")
-        else:
-            agent = "Agent"
-            handle = ""
-            text = str(msg)
-
-        agent = html.escape(str(agent))
-        handle = html.escape(str(handle))
-        text = html.escape(str(text))
-        turn = html.escape(str(turn))
-
+    for msg in messages:
+        agent = html.escape(msg.get("agent", "Agent"))
+        response = html.escape(msg.get("response", ""))
+        # Escape the original text for safe display
+        original_text_escaped = html.escape(text)
         cards.append(f"""
-        <div style="border-left: 3px solid #e05a35; padding: .7rem 1rem; margin: .5rem 0; background: #f7f7f7; border-radius: 6px;">
-            <div style="font-size: .8rem; color: #e05a35; font-weight: bold; text-transform: uppercase;">
-                {agent}
+        <div style="
+            padding:14px;
+            margin:10px 0;
+            border-left:4px solid #ff4d4d;
+            background:#1a1f2c;
+            border-radius:12px;">
+            <b style="color:#ff4d4d;">🗣 {agent}</b>
+            <div style="color:#e6f0f8;white-space:pre-wrap;line-height:1.5;">
+                {response}
             </div>
-            <div style="font-size: .75rem; color: #666;">
-                {handle} · #{turn}
+            <div style="margin-top:10px; padding:10px; background:#333; border-radius:8px; color:#00ff00;">
+                <b>Original Text:</b><br>{original_text_escaped}
             </div>
-            <p style="color: #222; margin-top: .5rem;">
-                {text}
-            </p>
         </div>
         """)
-
     return "\n".join(cards)
-# Funcție pentru rularea thread-ului multi-agent
-def run_multi_agent_thread(
-    stimulus,
-    provider,
-    total_turns,
-    use_anti_sistem,
-    use_conspirationist,
-    use_anti_suveranist
-):
-    active_slugs = []
 
-    if use_anti_sistem:
-        active_slugs.append("anti_sistem")
 
-    if use_conspirationist:
-        active_slugs.append("conspirationist")
-
-    if use_anti_suveranist:
-        active_slugs.append("anti_suveranist")
-
-    if not stimulus.strip():
-        return "Scrie un text politic mai întâi."
-
-    if not active_slugs:
-        return "Selectează cel puțin un agent."
-
-    try:
-        messages = run_thread(
-            stimulus=stimulus,
-            active_slugs=active_slugs,
-            total_turns=int(total_turns),
-            provider=provider,
-            k=3,
-        )
-
-        return render_thread_html(messages)
-
-    except Exception as e:
-        return f"[Eroare Multi-agent Thread: {type(e).__name__} — {e}]"    
-#UI complet minim
-#UI complet minim
+# ─────────────────────────────────────────────────────────────────────────────
+# 8. UI STATE
 agent_choices = load_agent_choices()
 
-with gr.Blocks(title="EchoChamber") as demo:
 
-    gr.Markdown("# EchoChamber")
-    gr.Markdown("Aplicație minimă pentru testarea agenților RAG.")
+# ─────────────────────────────────────────────────────────────────────────────
+# 9. UI
+CUSTOM_CSS = """
+body, .gradio-container {
+    background-color: #e6f0f8 !important;
+    font-family: Inter, sans-serif !important;
+    color: #1a1f2c !important;
+}
+.sidebar-panel {
+    background: #f0f4f8 !important;
+    border: 1px solid #d1d9e6 !important;
+    border-radius: 16px !important;
+    padding: 20px !important;
+}
+button.primary {
+    background: #ff4d4d !important;
+    color: white !important;
+}
+"""
 
-    with gr.Tab("Chat simplu"):
+with gr.Blocks(
+    title="EchoChamber Studio",
+    css=CUSTOM_CSS,
+    theme=gr.themes.Default(),
+) as demo:
 
-        prompt_box = gr.Textbox(
-            label="Prompt",
-            lines=4,
-            value="Explică ce este un LLM."
-        )
+    article_state = gr.State("")
+    full_article_text = gr.State("")
 
-        chat_button = gr.Button("Trimite")
+    with gr.Row(elem_classes=["title-container"]):
+        with gr.Column():
+            gr.Markdown("# 🧠 EchoChamber Studio")
+            gr.Markdown("Simulare de bule ideologice și dezbatere multi-agent")
 
-        chat_output = gr.Textbox(
-            label="Răspuns",
-            lines=8
-        )
+    with gr.Row():
+        with gr.Column(scale=1, min_width=340, elem_classes=["sidebar-panel"]):
+            gr.Markdown("### Control")
 
-        chat_button.click(
-            fn=chat,
-            inputs=prompt_box,
-            outputs=chat_output
-        )
+            provider = gr.Dropdown(
+                ["gemini", "gemini-flash"],
+                value="gemini-flash",
+                label="Provider",
+            )
+            model = gr.Textbox(value="default", label="Model")
+            temperature = gr.Slider(0, 1, value=0.7, step=0.1, label="Temperature")
 
-    with gr.Tab("Agent RAG"):
+            gr.Markdown("---")
+            gr.Markdown("### News")
 
-        agent_dropdown = gr.Dropdown(
-            choices=agent_choices,
-            value=agent_choices[0] if agent_choices else None,
-            label="Agent"
-        )
+            news_url = gr.Textbox(label="News URL")
+            manual_text = gr.Textbox(label="Manual text", lines=4)
 
-        provider_dropdown = gr.Dropdown(
-            choices=["gemini", "gemini-flash"],
-            value="gemini-flash",
-            label="Provider"
-        )
+            load_btn = gr.Button("Load news", variant="primary")
 
-        stimulus_box = gr.Textbox(
-            label="Text politic",
-            lines=4,
-            value="CCR a decis anularea alegerilor după suspiciuni privind influențe externe."
-        )
+            gr.Markdown("---")
+            news_preview = gr.Textbox(label="Preview", lines=6, interactive=False)
 
-        k_slider = gr.Slider(
-            minimum=1,
-            maximum=10,
-            value=5,
-            step=1,
-            label="Număr fragmente recuperate"
-        )
+        with gr.Column(scale=3):
+            with gr.Tab("Chat"):
+                chat_input = gr.Textbox(label="Question")
+                chat_btn = gr.Button("Send", variant="primary")
+                summary_btn = gr.Button("Summarize article")
+                chat_out = gr.Textbox(label="Response", lines=10)
 
-        agent_button = gr.Button("Generează răspuns RAG")
+            with gr.Tab("Agent"):
+                agent_select = gr.Dropdown(choices=agent_choices, label="Agent")
+                source_select = gr.Radio(["manual", "article"], value="article")
+                agent_btn = gr.Button("Run agent", variant="primary")
+                agent_out = gr.Textbox(lines=12)
 
-        response_box = gr.Textbox(
-            label="Răspuns agent",
-            lines=8
-        )
+            with gr.Tab("All agents"):
+                source_all = gr.Radio(["manual", "article"], value="article")
+                all_btn = gr.Button("Run all", variant="primary")
+                all_out = gr.Markdown()
 
-        context_box = gr.Textbox(
-            label="Context recuperat",
-            lines=12
-        )
+            with gr.Tab("Debate"):
+                source_debate = gr.Radio(["manual", "article"], value="article")
+                agents_multi = gr.Dropdown(
+                    choices=agent_choices,
+                    multiselect=True,
+                    label="Agents",
+                )
+                turns = gr.Slider(2, 8, value=4, step=1)
+                debate_btn = gr.Button("Start debate", variant="primary")
+                debate_out = gr.HTML()
 
-        agent_button.click(
-            fn=rag_agent_response,
-            inputs=[
-                agent_dropdown,
-                stimulus_box,
-                provider_dropdown,
-                k_slider
-            ],
-            outputs=[
-                response_box,
-                context_box
-            ]
-        )
+    # ───────────────── EVENTS ─────────────────
+    load_btn.click(
+        fn=load_news,
+        inputs=[news_url, manual_text],
+        outputs=[news_preview, full_article_text],  # FIX: 2 outputs to match 2 returns
+    )
 
-    with gr.Tab("Multi-agent thread"):
+    chat_btn.click(
+        fn=chat,
+        inputs=[chat_input, full_article_text],
+        outputs=chat_out,
+    )
 
-        thread_stimulus = gr.Textbox(
-            label="Text politic",
-            value="CCR a decis anularea alegerilor după suspiciuni privind influențe externe.",
-            lines=4
-        )
+    summary_btn.click(
+        fn=summarize_article,
+        inputs=[full_article_text],
+        outputs=chat_out,
+    )
 
-        thread_provider = gr.Dropdown(
-            choices=["gemini", "gemini-flash"],
-            value="gemini-flash",
-            label="Provider"
-        )
+    agent_btn.click(
+        fn=run_agent,
+        inputs=[agent_select, source_select, full_article_text, manual_text, provider, temperature],
+        outputs=agent_out,
+    )
 
-        thread_turns = gr.Slider(
-            minimum=2,
-            maximum=8,
-            value=4,
-            step=1,
-            label="Număr intervenții"
-        )
+    all_btn.click(
+        fn=run_all_agents,
+        inputs=[source_all, full_article_text, manual_text, provider, temperature],
+        outputs=all_out,
+    )
 
-        use_anti_sistem = gr.Checkbox(
-            value=True,
-            label="Anti-sistem"
-        )
+    debate_btn.click(
+        fn=run_debate,
+        inputs=[source_debate, full_article_text, manual_text, agents_multi, turns, provider, temperature],
+        outputs=debate_out,
+    )
 
-        use_conspirationist = gr.Checkbox(
-            value=True,
-            label="Conspiraționist"
-        )
 
-        use_anti_suveranist = gr.Checkbox(
-            value=True,
-            label="Anti-suveranist"
-        )
-
-        thread_button = gr.Button("Pornește thread")
-
-        thread_output = gr.HTML(
-            label="Thread generat"
-        )
-
-        thread_button.click(
-            fn=run_multi_agent_thread,
-            inputs=[
-                thread_stimulus,
-                thread_provider,
-                thread_turns,
-                use_anti_sistem,
-                use_conspirationist,
-                use_anti_suveranist
-            ],
-            outputs=thread_output
-        )
 if __name__ == "__main__":
-    demo.launch()
+    demo.queue().launch(show_error=True)
