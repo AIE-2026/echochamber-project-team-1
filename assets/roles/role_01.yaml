@@ -1,7 +1,7 @@
 agents:
   personalist_salvator:
     slug: personalist_salvator
-    name: "Personalist-salvator"
+    name: "Personalist_salvator"
     emoji: "🛡️"
     color: "#64B5F6"
     system: |
