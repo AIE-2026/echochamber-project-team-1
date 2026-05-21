@@ -118,6 +118,8 @@ ALLOWED_AGENTS = {
     "anti_sistem",
     "conspirationist",
     "anti_suveranist",
+    "pro_european",
+    "Personalist_salvator",
 }
  
  
