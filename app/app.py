@@ -60,11 +60,22 @@ load_dotenv(PROJECT_ROOT / ".env")
 BASE_URLS = {
     "gemini": "https://generativelanguage.googleapis.com/v1beta/openai/",
     "gemini-flash": "https://generativelanguage.googleapis.com/v1beta/openai/",
+    "deepseek": "https://api.deepseek.com",
+    "openrouter": "https://openrouter.ai/api/v1",
 }
- 
+
 API_KEYS = {
     "gemini": os.getenv("GEMINI_API_KEY"),
     "gemini-flash": os.getenv("GEMINI_API_KEY"),
+    "deepseek": os.getenv("DEEPSEEK_API_KEY"),
+    "openrouter": os.getenv("OPENROUTER_API_KEY"),
+}
+
+DEFAULT_MODELS = {
+    "gemini": os.getenv("GEMINI_MODEL", "gemini-2.5-flash-lite"),
+    "gemini-flash": os.getenv("GEMINI_FLASH_MODEL", "gemini-2.5-flash"),
+    "deepseek": os.getenv("DEEPSEEK_MODEL", "deepseek-chat"),
+    "openrouter": os.getenv("OPENROUTER_MODEL", "openai/gpt-oss-120b:free"),
 }
  
 from core.agent import generate_agent_response
@@ -179,13 +190,48 @@ def summarize_article(article):
     return ". ".join(sentences[:5]) + "."
  
  
+
 # ─────────────────────────────────────────────────────────────────────────────
 # 4. CHAT
 @safe_handler
-def chat(prompt, article):
+def chat(prompt, article, provider_val, model_val, temp_val):
     if not article:
         return "Nu există articol încărcat."
-    return f"{article}\n\nÎntrebare: {prompt}"
+
+    if not prompt or not prompt.strip():
+        return "Scrie o întrebare."
+
+    if not model_val or model_val.strip() == "default":
+        if provider_val == "gemini":
+            model_val = os.getenv("GEMINI_MODEL", "gemini-2.5-flash-lite")
+        elif provider_val == "gemini-flash":
+            model_val = os.getenv("GEMINI_FLASH_MODEL", "gemini-2.5-flash")
+        elif provider_val == "deepseek":
+            model_val = os.getenv("DEEPSEEK_MODEL", "deepseek-v4-flash")
+
+    system = (
+        "Ești un asistent care răspunde clar și concis în limba română. "
+        "Răspunde strict pe baza articolului primit. "
+        "Nu copia articolul integral și nu inventa informații."
+    )
+
+    user_prompt = f"""
+Articol:
+{article}
+
+Întrebare:
+{prompt}
+
+Răspunde scurt, clar și la obiect.
+""".strip()
+
+    return ask(
+        provider=provider_val,
+        model=model_val,
+        prompt=user_prompt,
+        system=system,
+        temperature=float(temp_val),
+    )
  
  
 # ─────────────────────────────────────────────────────────────────────────────
@@ -349,11 +395,14 @@ with gr.Blocks(
             gr.Markdown("### Control")
  
             provider = gr.Dropdown(
-                ["gemini", "gemini-flash"],
-                value="gemini-flash",
-                label="Provider",
+            ["gemini", "gemini-flash", "deepseek", "openrouter"],
+            value="gemini-flash",
+            label="Provider",
             )
-            model = gr.Textbox(value="default", label="Model")
+            model = gr.Textbox(
+            value=DEFAULT_MODELS["gemini-flash"],
+            label="Model"
+            )
             temperature = gr.Slider(0, 1, value=0.7, step=0.1, label="Temperature")
  
             gr.Markdown("---")
@@ -404,9 +453,9 @@ with gr.Blocks(
     )
  
     chat_btn.click(
-        fn=chat,
-        inputs=[chat_input, full_article_text],
-        outputs=chat_out,
+    fn=chat,
+    inputs=[chat_input, full_article_text, provider, model, temperature],
+    outputs=chat_out,
     )
  
     summary_btn.click(
@@ -431,6 +480,14 @@ with gr.Blocks(
         fn=run_debate,
         inputs=[source_debate, full_article_text, manual_text, agents_multi, turns, provider, temperature],
         outputs=debate_out,
+    )
+    def update_model_for_provider(provider_val):
+        return DEFAULT_MODELS.get(provider_val, "")
+
+    provider.change(
+    fn=update_model_for_provider,
+    inputs=provider,
+    outputs=model,
     )
  
  

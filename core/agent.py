@@ -24,6 +24,16 @@ MODELS = {
         "api_key": os.getenv("GEMINI_API_KEY"),
         "base_url": "https://generativelanguage.googleapis.com/v1beta/openai/",
     },
+    "deepseek": {
+        "model": os.getenv("DEEPSEEK_MODEL", "deepseek-chat"),
+        "api_key": os.getenv("DEEPSEEK_API_KEY"),
+        "base_url": "https://api.deepseek.com",
+    },
+    "openrouter": {
+        "model": os.getenv("OPENROUTER_MODEL", "openai/gpt-oss-120b:free"),
+        "api_key": os.getenv("OPENROUTER_API_KEY"),
+        "base_url": "https://openrouter.ai/api/v1",
+    },
 }
 
 
@@ -112,7 +122,7 @@ def main():
 
     parser.add_argument("--agent", required=True)
     parser.add_argument("--text", required=True)
-    parser.add_argument("--provider", default="gemini", choices=["gemini", "gemini-flash"])
+    parser.add_argument("--provider", default="gemini", choices=list(MODELS.keys()))
     parser.add_argument("--k", type=int, default=5)
     parser.add_argument("--temperature", type=float, default=0.7)
     parser.add_argument("--roles", default="assets/roles/roles.yaml")
