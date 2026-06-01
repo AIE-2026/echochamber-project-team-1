@@ -1,0 +1,111 @@
+﻿source_channel,video_title,comment_text,model_output
+RecorderRomania,PORTRET DE CANDIDAT: Nicușor Dan,De departe varianta cea mai sigura este Nicusor Dan! ✅ Sper ca cei nehotarati si cei neimplicati sa ia o decizie corecta pentru tara asta. 🙏,"```json
+{
+  ""target"": ""Nicosor Dan"",
+  ""stance"": ""pro"",
+  ""sentiment"": ""pozitiv"",
+  ""tone"": ""admirativ"",
+  ""topic"": ""alegeri"",
+  ""interpretation_problem"": ""niciuna"",
+  ""justification"": ""Autorul consideră Nicușor Dan \""cea mai sigură variantă\"" și își exprimă speranța ca alegătorii să ia o decizie \""corectă\"", indicând o poziționare pro și un sentiment pozitiv față de acesta.""
+}
+```"
+georgesimionoficial,"Românii din diaspora au scris istorie: votul lor, o dovadă de demnitate și speranță",Mai facut sa pling stimate george simion astept cu mult drag numirea ta la conducerea tarii noastre vor incerca ticalosii sa te opreasca dar nu va fu posibil de data asta poporul nu se va lasa!sanatate si putere om drag 🍀🙏❤️,"```json
+{
+  ""target"": ""George Simion"",
+  ""stance"": ""pro"",
+  ""sentiment"": ""pozitiv"",
+  ""tone"": ""admirativ"",
+  ""topic"": ""politică internă"",
+  ""interpretation_problem"": ""niciuna"",
+  ""justification"": ""Autorul își exprimă admirația și susținerea față de George Simion, dorindu-i succes în preluarea conducerii țării și considerându-l capabil să depășească obstacolele.""
+}
+```"
+turcescu111,"Coșmarul nu poate dura cinci ani, au înțeles aproape toți","ZILE FRUMOASE SĂ AVEȚI CU FAMILIA,AVETI DREPTATE DESPRE MUCUSOR.","```json
+{
+  ""target"": ""Mucușor"",
+  ""stance"": ""pro"",
+  ""sentiment"": ""pozitiv"",
+  ""tone"": ""admirativ"",
+  ""topic"": ""persoane"",
+  ""interpretation_problem"": ""niciuna"",
+  ""justification"": ""Autorul își exprimă aprecierea față de Mucușor și îi urează cele \""zile frumoase\"". Poziționarea este clar pozitivă, iar sentimentul general este de admirație.""
+}
+```"
+CălinGeorgescu-CanalulOficial,Călin Georgescu  - Zidurile minciunii vor cădea ( IPJ - 18.08.2025 ),"Romanii sunt in pragul revoltei. Au venit facturile la en.electrica...iar le--au luat din hrană.... amenințarea cu sărăcia se acutizează. Vorbiți cu oamenii, mergeți în piețe, la casieriile incasatorilor - de gaz, curent,taxe, asigurări, etc.. . ,","```json
+{
+  ""target"": ""Guvernul/Autoritățile"",
+  ""stance"": ""anti"",
+  ""sentiment"": ""negativ"",
+  ""tone"": ""alarmist"",
+  ""topic"": ""economie/costul vieții"",
+  ""interpretation_problem"": ""niciuna"",
+  ""justification"": ""Comentariul critică autoritățile pentru facturile mari la energie, sugerând că acestea afectează nivelul de trai al românilor și pot duce la revoltă.""
+}
+```"
+turcescu111,Georgescu le-a dat la operație! ,NICI NU AM RESPIRAT CÂT TIMP A FOST PREȘEDINTELE NOSTRU ALES DOMNUL CĂLIN GEORGESCU LA TELEVIZIUNEA POPORULUI ❤AȘ ASCULTA ACEST OM NON STOP UN OM DEȘTEPT ȘI PATRIOT ❤❤RESPECT REALITATEA ❤❤❤AI DREPTATE DOMNULE TURCESCU❤RESPECT ❤,"```json
+{
+  ""target"": ""Călin Georgescu și Ion Cristoiu (presupus, prin menționarea \""Domnule Turcescu\"" și contextul politic)"",
+  ""stance"": ""pro"",
+  ""sentiment"": ""pozitiv"",
+  ""tone"": ""admirativ"",
+  ""topic"": ""politică"",
+  ""interpretation_problem"": ""niciuna"",
+  ""justification"": ""Autorul își exprimă admirația față de Călin Georgescu, considerându-l un om deștept și patriot, și pare să fie de acord cu Ion Cristoiu. Sentimentul este clar pozitiv și tonul admirativ.""
+}
+```"
+RecorderRomania,Investigație cu camera ascunsă. Cât de ușor ajungi instructor auto în România,"Multe permise, putini soferi. Un sofer este cel care stie sa previna un accident, nu sa il provoace. Sa stii sa anticipezi si sa previi.","```json
+{
+  ""target"": ""soferi"",
+  ""stance"": ""neutru"",
+  ""sentiment"": ""neutru"",
+  ""tone"": ""explicativ"",
+  ""topic"": ""soferie"",
+  ""interpretation_problem"": ""niciuna"",
+  ""justification"": ""Comentariul definește calitățile unui șofer bun, concentrându-se pe prevenirea accidentelor. Nu există o poziționare clară pro sau anti, ci o descriere a competențelor.""
+}
+```"
+turcescu111,"Avem buget, dar n-avem bani. Războiul e tatăl tuturor! 🔴 LIVE Turcescu Neamțu Show",Cred ca marea problema a SuA e Israel! Toate razboaiele facute de SuA sănt făcute în jurul Israelului! Or sa și dea seama ca au cea mai toxică relație!,"```json
+{
+  ""target"": ""Statele Unite ale Americii (SUA) și relația lor cu Israelul"",
+  ""stance"": ""anti"",
+  ""sentiment"": ""negativ"",
+  ""tone"": ""conspirativ"",
+  ""topic"": ""politică externă, relații internaționale"",
+  ""interpretation_problem"": ""conspirație"",
+  ""justification"": ""Autorul sugerează o legătură cauzală conspirativă între Israel și implicarea SUA în războaie, considerând relația 'toxică'.""
+}
+```"
+RecorderRomania,Investigație cu camera ascunsă. Cât de ușor ajungi instructor auto în România,"am permisul de 3 ani de zile și încă îmi este frică să conduc.. instructorul meu țipa la mine, mă făcea să plâng iar peste jumătate de ședințe le-am petrecut în poligon pentru ca dansul trebuia să își bea cafeluța cu tovarășii… cea mai gravă problemă este ca școala te învață să iei examenul practic și cam atât, în rest ești în voia domnului 😪","```json
+{
+  ""target"": ""școala de șoferi"",
+  ""stance"": ""anti"",
+  ""sentiment"": ""negativ"",
+  ""tone"": ""furios"",
+  ""topic"": ""educație"",
+  ""interpretation_problem"": ""niciuna"",
+  ""justification"": ""Autorul critică vehement experiența sa la școala de șoferi, descriind instructorul ca fiind abuziv și școala ca fiind ineficientă în pregătirea reală pentru condus.""
+}
+```"
+georgesimionoficial,"Azi la Răcășdia, printre români","George Simion, președinte! Reîntoarcerea la democrație! 🇷🇴❤️","```json
+{
+  ""target"": ""George Simion"",
+  ""stance"": ""pro"",
+  ""sentiment"": ""pozitiv"",
+  ""tone"": ""admirativ"",
+  ""topic"": ""politică"",
+  ""interpretation_problem"": ""niciuna"",
+  ""justification"": ""Comentariul susține explicit candidatura lui George Simion la președinție și asociază acest lucru cu \""reîntoarcerea la democrație\"", exprimând un sentiment pozitiv și un ton admirativ.""
+}
+```"
+RecorderRomania,DOCUMENTAR RECORDER. Justiție capturată,"Multumesc pentru curaj si devotament! Informatia e putere, oamenii au nevoie sa stie","```json
+{
+  ""target"": ""Autorul comentariului (implicit)"",
+  ""stance"": ""pro"",
+  ""sentiment"": ""pozitiv"",
+  ""tone"": ""admirativ"",
+  ""topic"": ""informare"",
+  ""interpretation_problem"": ""niciuna"",
+  ""justification"": ""Comentariul exprimă mulțumiri și apreciere pentru curajul și devotamentul autorului, subliniind importanța informării. Poziționarea este clar pro, iar sentimentul pozitiv.""
+}
+```"
